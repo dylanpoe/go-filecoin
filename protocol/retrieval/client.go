@@ -22,15 +22,21 @@ import (
 // succeed.
 const RetrievePieceChunkSize = 256 << 8
 
+type clientPorcelainAPI interface {
+	PingMinerWithTimeout(ctx context.Context, p peer.ID, to time.Duration) error
+}
+
 // Client is a client interface to the retrieval market protocols.
 type Client struct {
+	api  clientPorcelainAPI
 	host host.Host
 	log  logging.EventLogger
 }
 
 // NewClient produces a new Client.
-func NewClient(host host.Host, blockTime time.Duration) *Client {
+func NewClient(host host.Host, blockTime time.Duration, api clientPorcelainAPI) *Client {
 	return &Client{
+		api:  api,
 		host: host,
 		log:  logging.Logger("retrieval/client"),
 	}
@@ -38,6 +44,10 @@ func NewClient(host host.Host, blockTime time.Duration) *Client {
 
 // RetrievePiece connects to a miner and transfers a piece of content.
 func (sc *Client) RetrievePiece(ctx context.Context, minerPeerID peer.ID, pieceCID cid.Cid) (io.ReadCloser, error) {
+	err := sc.api.PingMinerWithTimeout(ctx, minerPeerID, 15*time.Second)
+	if err != nil {
+		return nil, err
+	}
 	s, err := sc.host.NewStream(ctx, minerPeerID, retrievalFreeProtocol)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create stream to retrieval miner")
