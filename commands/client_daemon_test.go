@@ -244,12 +244,11 @@ func TestSelfDialStorageGoodError(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 
 	ctx, env := fastesting.NewTestEnvironment(ctx, t, fast.EnvironmentOpts{})
 	// Teardown after test ends.
 	defer func() {
-		cancel()
 		err := env.Teardown(ctx)
 		require.NoError(err)
 	}()
@@ -289,6 +288,6 @@ func TestSelfDialStorageGoodError(t *testing.T) {
 	w := bytes.NewBuffer(cmdOutBytes)
 	miningNode.DumpLastOutput(w)
 	outputStr := string(w.Bytes())
-	expectedErrStr := "attempting to make storage deal with self. This is currently unsupported.  Please use a separate go-filecoin node as client"
+	expectedErrStr := "attempting to make storage deal with self"
 	assert.Contains(outputStr, expectedErrStr)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	cbu "github.com/filecoin-project/go-filecoin/cborutil"
+	"github.com/filecoin-project/go-filecoin/net"
 )
 
 // RetrievePieceChunkSize defines the size of piece-chunks to be sent from miner to client. The maximum size of readable
@@ -45,6 +46,9 @@ func NewClient(host host.Host, blockTime time.Duration, api clientPorcelainAPI) 
 // RetrievePiece connects to a miner and transfers a piece of content.
 func (sc *Client) RetrievePiece(ctx context.Context, minerPeerID peer.ID, pieceCID cid.Cid) (io.ReadCloser, error) {
 	err := sc.api.PingMinerWithTimeout(ctx, minerPeerID, 15*time.Second)
+	if err == net.ErrPingSelf {
+		return nil, errors.New("attempting to retrieve piece from self. This is currently unsupported.  Please use a separate go-filecoin node as client")
+	}
 	if err != nil {
 		return nil, err
 	}
