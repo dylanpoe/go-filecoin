@@ -19,6 +19,7 @@ import (
 	"github.com/filecoin-project/go-filecoin/actor/builtin/paymentbroker"
 	"github.com/filecoin-project/go-filecoin/address"
 	cbu "github.com/filecoin-project/go-filecoin/cborutil"
+	"github.com/filecoin-project/go-filecoin/net"	
 	"github.com/filecoin-project/go-filecoin/porcelain"
 	"github.com/filecoin-project/go-filecoin/proofs"
 	"github.com/filecoin-project/go-filecoin/protocol/storage/storagedeal"
@@ -157,6 +158,9 @@ func (smc *Client) ProposeDeal(ctx context.Context, miner address.Address, data 
 	// see if we managed to connect to the miner
 	select {
 	case err := <-minerAlive:
+		if err == net.ErrPingSelf {
+			return nil, errors.New("attempting to make storage deal with self. This is currently unsupported.  Please use a separate go-filecoin node as client")
+		}
 		if err != nil {
 			return nil, err
 		}

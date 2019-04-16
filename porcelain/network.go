@@ -7,8 +7,6 @@ import (
 
 	"github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
-
-	"github.com/filecoin-project/go-filecoin/net"
 )
 
 type netPlumbing interface {
@@ -22,11 +20,8 @@ func PingMinerWithTimeout(ctx context.Context, minerPID peer.ID, timeout time.Du
 	defer cancel()
 
 	res, err := netPlumbing.NetworkPing(plumbing, ctx, minerPID)
-	if err == net.ErrPingSelf {
-		return fmt.Errorf("attempting to make deal with self.  This is currently unsupported.  Please use a separate go-filecoin node as client")
-	}
 	if err != nil {
-		return fmt.Errorf("couldn't establish connection to miner: %s", err)
+		return err
 	}
 
 	select {

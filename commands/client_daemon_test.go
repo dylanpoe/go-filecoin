@@ -2,16 +2,24 @@ package commands_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"math/big"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/ipfs/go-ipfs-files"
+	"github.com/stretchr/testify/require" 
 
 	"github.com/filecoin-project/go-filecoin/fixtures"
 	"github.com/filecoin-project/go-filecoin/protocol/storage"
 	th "github.com/filecoin-project/go-filecoin/testhelpers"
 	tf "github.com/filecoin-project/go-filecoin/testhelpers/testflags"
+	"github.com/filecoin-project/go-filecoin/tools/fast/fastesting"
+	"github.com/filecoin-project/go-filecoin/tools/fast"
+	"github.com/filecoin-project/go-filecoin/tools/fast/series"	
 )
 
 func TestListAsks(t *testing.T) {
@@ -229,4 +237,40 @@ func TestPieceRejectionInProposeStorageDeal(t *testing.T) {
 	proposeDealErrors := clientDaemon.Run("client", "propose-storage-deal", fixtures.TestMiners[0], dataCid, "0", "5").ReadStderr()
 
 	assert.Contains(proposeDealErrors, "piece is 3000 bytes but sector size is 1016 bytes")
+}
+
+func TestSelfDialStorageGoodError(t *testing.T) {
+	tf.IntegrationTest(t)
+
+	assert := assert.New(t)
+	require := require.New(t)
+
+	ctx := context.Background()
+
+	ctx, env := fastesting.NewTestEnvironment(ctx, t, fast.EnvironmentOpts{})
+	// Teardown after test ends.
+	defer func() {
+		err := env.Teardown(ctx)
+		require.NoError(err)
+	}()
+	require.NoError(env.GenesisMiner.MiningStart(ctx))
+
+	// Start mining.
+	miningNode := env.RequireNewNodeWithFunds(1000)
+	pledge := uint64(10)
+	collateral := big.NewInt(int64(1))
+	price := big.NewFloat(float64(0.001))
+	expiry := big.NewInt(int64(500))
+	fmt.Printf("creatin miner\n")
+	ask, err := series.CreateMinerWithAsk(ctx, miningNode, pledge, collateral, price, expiry)
+	miningNode.DumpLastOutput(os.Stdout)	
+	require.NoError(err)
+
+	// Try to make a storage deal with self and fail on self dial.
+	f := files.NewBytesFile([]byte("satyamevajayate"))
+	_, _, err = series.ImportAndStore(ctx, miningNode, ask, f)
+
+	
+	expectedErrStr := "attempting to make storage deal with self. This is currently unsupported.  Please use a separate go-filecoin node as client"
+	assert.Equal(expectedErrStr, err.Error())
 }
