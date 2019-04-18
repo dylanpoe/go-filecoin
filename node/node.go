@@ -25,8 +25,7 @@ import (
 	autonatsvc "github.com/libp2p/go-libp2p-autonat-svc"
 	circuit "github.com/libp2p/go-libp2p-circuit"
 	"github.com/libp2p/go-libp2p-host"
-	"github.com/libp2p/go-libp2p-kad-dht"
-	"github.com/libp2p/go-libp2p-kad-dht/opts"
+
 	p2pmetrics "github.com/libp2p/go-libp2p-metrics"
 	libp2ppeer "github.com/libp2p/go-libp2p-peer"
 	dhtprotocol "github.com/libp2p/go-libp2p-protocol"
